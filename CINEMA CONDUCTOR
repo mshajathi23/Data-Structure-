@@ -1,0 +1,199 @@
+To add the functionality for updating seat information (marking a seat as available or booked), we need to add another choice in the menu. This will allow users to update the seat status directly. Here is the modified code:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define SEATS 10
+
+// Define a structure to store ticket information
+struct Ticket {
+    int seatNumber;
+    char movieName[50];
+    char customerName[50];
+    struct Ticket* next;
+};
+
+// Function to book a seat
+void bookSeat(int* seats, struct Ticket** head, int seatNumber, char* movieName, char* customerName) {
+    if (seats[seatNumber - 1] == 0) {
+        seats[seatNumber - 1] = 1;
+
+        // Create a new ticket and add it to the linked list
+        struct Ticket* newTicket = (struct Ticket*)malloc(sizeof(struct Ticket));
+        newTicket->seatNumber = seatNumber;
+        strcpy(newTicket->movieName, movieName);
+        strcpy(newTicket->customerName, customerName);
+        newTicket->next = *head;
+        *head = newTicket;
+
+        printf("Seat %d booked successfully for %s.\n", seatNumber, customerName);
+    } else {
+        printf("Seat %d is already booked.\n", seatNumber);
+    }
+}
+
+// Function to cancel a booking
+void cancelBooking(int* seats, struct Ticket** head, int seatNumber) {
+    if (seats[seatNumber - 1] == 1) {
+        seats[seatNumber - 1] = 0;
+        struct Ticket* current = *head;
+        struct Ticket* previous = NULL;
+
+        while (current != NULL && current->seatNumber != seatNumber) {
+            previous = current;
+            current = current->next;
+        }
+
+        if (current != NULL) {
+            if (previous == NULL) {
+                *head = current->next;
+            } else {
+                previous->next = current->next;
+            }
+            free(current);
+            printf("Seat %d booking canceled successfully.\n", seatNumber);
+        } else {
+            printf("Booking for seat %d not found.\n", seatNumber);
+        }
+    } else {
+        printf("Seat %d is not booked yet.\n", seatNumber);
+    }
+}
+
+// Function to check in for a seat
+void checkIn(int* seats, int seatNumber) {
+    if (seats[seatNumber - 1] == 1) {
+        printf("Check-in successful for seat %d.\n", seatNumber);
+    } else {
+        printf("Seat %d is not booked yet.\n", seatNumber);
+    }
+}
+
+// Function to print booked tickets
+void printTickets(struct Ticket* head) {
+    struct Ticket* current = head;
+    printf("\nBooked Tickets:\n");
+    while (current != NULL) {
+        printf("Seat Number: %d, Movie Name: %s, Customer Name: %s\n", current->seatNumber, current->movieName, current->customerName);
+        current = current->next;
+    }
+}
+
+// Function to print available seats
+void printAvailableSeats(int* seats) {
+    printf("\nAvailable Seats: ");
+    for (int i = 0; i < SEATS; i++) {
+        if (seats[i] == 0) {
+            printf("%d ", i + 1);
+        }
+    }
+    printf("\n");
+}
+
+// Function to search tickets by customer name or movie name
+void searchTickets(struct Ticket* head, char* query) {
+    struct Ticket* current = head;
+    printf("\nSearch Results for \"%s\":\n", query);
+    int found = 0;
+    while (current != NULL) {
+        if (strstr(current->customerName, query) != NULL || strstr(current->movieName, query) != NULL) {
+            printf("Seat Number: %d, Movie Name: %s, Customer Name: %s\n", current->seatNumber, current->movieName, current->customerName);
+            found = 1;
+        }
+        current = current->next;
+    }
+    if (!found) {
+        printf("No tickets found for \"%s\".\n", query);
+    }
+}
+
+// Function to update seat availability
+void updateSeat(int* seats, int seatNumber, int status) {
+    if (seatNumber < 1 || seatNumber > SEATS) {
+        printf("Invalid seat number.\n");
+        return;
+    }
+    seats[seatNumber - 1] = status;
+    if (status == 0) {
+        printf("Seat %d is now marked as available.\n", seatNumber);
+    } else {
+        printf("Seat %d is now marked as booked.\n", seatNumber);
+    }
+}
+
+int main() {
+    int seats[SEATS] = {0}; // 0 means the seat is available, 1 means it's booked
+    struct Ticket* head = NULL; // Head of the linked list
+
+    int choice;
+    while (1) {
+        printf("\n1. Book a seat\n");
+        printf("2. Cancel a booking\n");
+        printf("3. Check in\n");
+        printf("4. View booked tickets\n");
+        printf("5. View available seats\n");
+        printf("6. Search tickets\n");
+        printf("7. Update seat availability\n");
+        printf("8. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+
+        if (choice == 1) {
+            int seatNumber;
+            char movieName[50];
+            char customerName[50];
+
+            printf("Enter seat number (1-%d): ", SEATS);
+            scanf("%d", &seatNumber);
+            getchar(); // to consume the newline character after scanf
+
+            printf("Enter movie name: ");
+            fgets(movieName, sizeof(movieName), stdin);
+            movieName[strcspn(movieName, "\n")] = '\0'; // remove trailing newline
+
+            printf("Enter customer name: ");
+            fgets(customerName, sizeof(customerName), stdin);
+            customerName[strcspn(customerName, "\n")] = '\0'; // remove trailing newline
+
+            bookSeat(seats, &head, seatNumber, movieName, customerName);
+        } else if (choice == 2) {
+            int seatNumber;
+            printf("Enter seat number to cancel (1-%d): ", SEATS);
+            scanf("%d", &seatNumber);
+            cancelBooking(seats, &head, seatNumber);
+        } else if (choice == 3) {
+            int seatNumber;
+            printf("Enter seat number to check in (1-%d): ", SEATS);
+            scanf("%d", &seatNumber);
+            checkIn(seats, seatNumber);
+        } else if (choice == 4) {
+            printTickets(head);
+        } else if (choice == 5) {
+            printAvailableSeats(seats);
+        } else if (choice == 6) {
+            char query[50];
+            getchar(); // to consume the newline character after scanf
+            printf("Enter customer name or movie name to search: ");
+            fgets(query, sizeof(query), stdin);
+            query[strcspn(query, "\n")] = '\0'; // remove trailing newline
+            searchTickets(head, query);
+        } else if (choice == 7) {
+            int seatNumber, status;
+            printf("Enter seat number to update (1-%d): ", SEATS);
+            scanf("%d", &seatNumber);
+            printf("Enter status (0 for available, 1 for booked): ");
+            scanf("%d", &status);
+            updateSeat(seats, seatNumber, status);
+        } else if (choice == 8) {
+            break;
+        } else {
+            printf("Invalid choice. Please try again.\n");
+        }
+    }
+    return 0;
+}
+```
+
+This code adds a new option to the menu for updating seat availability. The `updateSeat` function allows setting a seat to either available (0) or booked (1), and it prints the appropriate message based on the action taken. The main loop in `main` has been updated to include this new choice (7) and handle it accordingly.
